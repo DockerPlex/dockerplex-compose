@@ -1,0 +1,179 @@
+version: '3'
+
+networks:
+  plex-network:
+    external: true
+
+services:
+
+  traefik:
+    image: traefik:1.5.3
+    #command: --api # traefik dasboard
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      #- "8080:8080" # traefik dasboard
+    networks:
+      - plex-network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${SERVICES_CONFIG_DIR}/traefik/traefik.toml:/traefik.toml
+      - ${SERVICES_CONFIG_DIR}/traefik/acme.json:/acme.json
+    environment:
+      - CLOUDFLARE_EMAIL=${CLOUDFLARE_EMAIL}
+      - CLOUDFLARE_API_KEY=${CLOUDFLARE_API_KEY}
+
+  plex:
+    image: linuxserver/plex:latest
+    networks:
+      - plex-network
+    environment:
+      - VERSION=latest
+      - PGID=${ENV_PGID}
+      - PUID=${ENV_PUID}
+      - TZ=Europe/Berlin
+    ports:
+      - 32400:32400
+      - 32400:32400/udp
+      - 32469:32469
+      - 32469:32469/udp
+      - 5353:5353/udp
+      - 1900:1900/udp
+    volumes:
+      - ${SERVICES_CONFIG_DIR}/plex/config:/config
+      - ${MEDIA_DIR}/tvshows:/data/tvshows
+      - ${MEDIA_DIR}/movies:/data/movies
+      - ${PLEX_TRANSCODE_DIR}/transcode:/transcode
+
+  deluge:
+    image: linuxserver/deluge:latest
+    networks:
+      - plex-network
+    environment:
+      - PGID=${ENV_PGID}
+      - PUID=${ENV_PUID}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${SERVICES_CONFIG_DIR}/deluge/config:/config
+      - ${DOWNLOADS_DIR}/torrents:/downloads/torrents 
+      - ${DOWNLOADS_DIR}/complete:/downloads/complete 
+      - ${DOWNLOADS_DIR}/incomplete:/downloads/incomplete 
+    labels:
+      - "traefik.backend=deluge"
+      - "traefik.docker.network=plex-network"
+      - "traefik.frontend.rule=Host:deluge.${TRAEFIK_DOMAIN}"
+      - "traefik.enable=true"
+      - "traefik.backend.port=8112"
+
+  sonarr:
+    image: linuxserver/sonarr:latest
+    networks:
+      - plex-network
+    environment:
+      - PGID=${ENV_PGID}
+      - PUID=${ENV_PUID}
+    volumes:
+      - /dev/rtc:/dev/rtc:ro
+      - ${SERVICES_CONFIG_DIR}/sonarr/config:/config
+      - ${MEDIA_DIR}/tvshows:/tv
+      - ${DOWNLOADS_DIR}/complete:/downloads/complete
+    labels:
+      - "traefik.backend=sonarr"
+      - "traefik.docker.network=plex-network"
+      - "traefik.frontend.rule=Host:sonarr.${TRAEFIK_DOMAIN}"
+      - "traefik.enable=true"
+      - "traefik.backend.port=8989"
+      
+  radarr:
+    image: linuxserver/radarr:latest
+    networks:
+      - plex-network
+    environment:
+      - PGID=${ENV_PGID}
+      - PUID=${ENV_PUID}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${SERVICES_CONFIG_DIR}/radarr/config:/config
+      - ${MEDIA_DIR}/movies:/movies
+      - ${DOWNLOADS_DIR}/complete:/downloads/complete
+    labels:
+      - "traefik.backend=radarr"
+      - "traefik.docker.network=plex-network"
+      - "traefik.frontend.rule=Host:radarr.${TRAEFIK_DOMAIN}"
+      - "traefik.enable=true"
+      - "traefik.backend.port=7878"
+      
+  plexpy:
+    image: linuxserver/plexpy:latest
+    networks:
+      - plex-network
+    environment:
+      - PGID=${ENV_PGID}
+      - PUID=${ENV_PUID}
+      - TZ=Europe/Berlin
+    volumes:
+      - ${SERVICES_CONFIG_DIR}/plexpy/config:/config
+      - ${SERVICES_CONFIG_DIR}/plexpy/logs:/logs
+    labels:
+      - "traefik.backend=plexpy"
+      - "traefik.docker.network=plex-network"
+      - "traefik.frontend.rule=Host:plexpy.${TRAEFIK_DOMAIN}"
+      - "traefik.enable=true"
+      - "traefik.backend.port=8181"
+
+  jackett:
+    image: linuxserver/jackett:latest
+    networks:
+      - plex-network
+    environment:
+      - PGID=${ENV_PGID}
+      - PUID=${ENV_PUID}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${SERVICES_CONFIG_DIR}/jackett/config:/config
+    labels:
+      - "traefik.backend=jackett"
+      - "traefik.docker.network=plex-network"
+      - "traefik.frontend.rule=Host:jackett.${TRAEFIK_DOMAIN}"
+      - "traefik.enable=true"
+      - "traefik.backend.port=9117"
+      
+  ombi:
+    image: linuxserver/ombi:latest
+    networks:
+      - plex-network
+    links:
+      - sonarr:sonarr
+      - radarr:radarr
+      - plex:plex
+    volumes_from:
+      - sonarr
+      - radarr
+      - plex
+    environment:
+      - PGID=${ENV_PGID}
+      - PUID=${ENV_PUID}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${SERVICES_CONFIG_DIR}/ombi/config:/config
+    labels:
+      - "traefik.backend=ombi"
+      - "traefik.docker.network=plex-network"
+      - "traefik.frontend.rule=Host:request.${TRAEFIK_DOMAIN}"
+      - "traefik.enable=true"
+      - "traefik.backend.port=3579"
+      
+  transcoder:
+    image: vilsol/transcoder
+    #restart: always
+    tty: true
+    cpus: 1
+    #cpuset: "1,17,2,18"
+    volumes:
+      - ${MEDIA_DIR}:/media
+    environment:
+      - H265_TRANSCODE=false
+      - BOT_KEY=${TRANSCODER_BOT_KEY}
+      - CHAT_ID=${TRANSCODER_CHAT_ID}
+      - HOST=${TRANSCODER_HOST}

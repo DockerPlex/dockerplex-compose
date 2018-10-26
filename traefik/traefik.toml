@@ -1,0 +1,37 @@
+debug = false
+
+logLevel = "ERROR"
+defaultEntryPoints = ["https","http"]
+
+[entryPoints]
+  [entryPoints.http]
+  address = ":80"
+    [entryPoints.http.redirect]
+    entryPoint = "https"
+  [entryPoints.https]
+  address = ":443"
+  [entryPoints.https.tls]
+  [entryPoints.https.auth.basic]
+  users = ["test:$apr1$REqvlTHf$4eYHLmD3gxecj7/YtR68J1"]
+
+
+[retry]
+
+[docker]
+endpoint = "unix:///var/run/docker.sock"
+domain = "DOMAIN_HERE"
+watch = true
+exposedbydefault = false
+
+[acme]
+email = "EMAIL_HERE"
+storage = "acme.json"
+entryPoint = "https"
+
+  [acme.dnsChallenge]
+  provider = "cloudflare"
+  delayBeforeCheck = 0
+
+[[acme.domains]]
+  main = "DOMAIN_HERE"
+  sans = ["deluge.DOMAIN_HERE", "sonarr.DOMAIN_HERE", "radarr.DOMAIN_HERE", "plexpy.DOMAIN_HERE", "jackett.DOMAIN_HERE", "request.DOMAIN_HERE"]
