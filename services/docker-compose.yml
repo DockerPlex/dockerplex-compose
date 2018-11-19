@@ -42,8 +42,7 @@ services:
       - 1900:1900/udp
     volumes:
       - ${SERVICES_CONFIG_DIR}/plex/config:/config
-      - ${MEDIA_DIR}/tvshows:/data/tvshows
-      - ${MEDIA_DIR}/movies:/data/movies
+      - ${MEDIA_DIR}:/data/plex_media
       - ${PLEX_TRANSCODE_DIR}/transcode:/transcode
 
   deluge:
