@@ -7,7 +7,7 @@ networks:
 services:
 
   traefik:
-    image: traefik:1.5.3
+    image: traefik:latest
     #command: --api # traefik dasboard
     restart: always
     ports:
@@ -146,14 +146,13 @@ services:
       - sonarr:sonarr
       - radarr:radarr
       - plex:plex
-    volumes_from:
-      - sonarr
-      - radarr
-      - plex
     environment:
       - PGID=${ENV_PGID}
       - PUID=${ENV_PUID}
     volumes:
+      - sonarr
+      - radarr
+      - plex
       - /etc/localtime:/etc/localtime:ro
       - ${SERVICES_CONFIG_DIR}/ombi/config:/config
     labels:
@@ -166,8 +165,8 @@ services:
   transcoder:
     image: vilsol/transcoder
     #restart: always
-    tty: true
-    cpus: 1
+    #tty: true
+    #cpus: 1
     #cpuset: "1,17,2,18"
     volumes:
       - ${MEDIA_DIR}:/media
