@@ -59,6 +59,7 @@ services:
       - ${DOWNLOADS_DIR}/complete:/downloads/complete 
       - ${DOWNLOADS_DIR}/incomplete:/downloads/incomplete 
     labels:
+      - "traefik.frontend.auth.basic.users=${TRAEFIK_BASIC_AUTH}"
       - "traefik.backend=deluge"
       - "traefik.docker.network=plex-network"
       - "traefik.frontend.rule=Host:deluge.${TRAEFIK_DOMAIN}"
@@ -78,6 +79,7 @@ services:
       - ${MEDIA_DIR}/tvshows:/tv
       - ${DOWNLOADS_DIR}/complete:/downloads/complete
     labels:
+      - "traefik.frontend.auth.basic.users=${TRAEFIK_BASIC_AUTH}"
       - "traefik.backend=sonarr"
       - "traefik.docker.network=plex-network"
       - "traefik.frontend.rule=Host:sonarr.${TRAEFIK_DOMAIN}"
@@ -97,6 +99,7 @@ services:
       - ${MEDIA_DIR}/movies:/movies
       - ${DOWNLOADS_DIR}/complete:/downloads/complete
     labels:
+      - "traefik.frontend.auth.basic.users=${TRAEFIK_BASIC_AUTH}"
       - "traefik.backend=radarr"
       - "traefik.docker.network=plex-network"
       - "traefik.frontend.rule=Host:radarr.${TRAEFIK_DOMAIN}"
@@ -115,6 +118,7 @@ services:
       - ${SERVICES_CONFIG_DIR}/plexpy/config:/config
       - ${SERVICES_CONFIG_DIR}/plexpy/logs:/logs
     labels:
+      - "traefik.frontend.auth.basic.users=${TRAEFIK_BASIC_AUTH}"
       - "traefik.backend=plexpy"
       - "traefik.docker.network=plex-network"
       - "traefik.frontend.rule=Host:plexpy.${TRAEFIK_DOMAIN}"
@@ -132,6 +136,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - ${SERVICES_CONFIG_DIR}/jackett/config:/config
     labels:
+      - "traefik.frontend.auth.basic.users=${TRAEFIK_BASIC_AUTH}"
       - "traefik.backend=jackett"
       - "traefik.docker.network=plex-network"
       - "traefik.frontend.rule=Host:jackett.${TRAEFIK_DOMAIN}"
@@ -150,9 +155,9 @@ services:
       - PGID=${ENV_PGID}
       - PUID=${ENV_PUID}
     volumes:
-      - sonarr
-      - radarr
-      - plex
+      #- sonarr
+      #- radarr
+      #- plex
       - /etc/localtime:/etc/localtime:ro
       - ${SERVICES_CONFIG_DIR}/ombi/config:/config
     labels:

@@ -11,9 +11,6 @@ defaultEntryPoints = ["http","https"]
   [entryPoints.https]
   address = ":443"
   [entryPoints.https.tls]
-  [entryPoints.https.auth.basic]
-  users = ["test:$apr1$REqvlTHf$4eYHLmD3gxecj7/YtR68J1"]
-
 
 [retry]
 
