@@ -155,9 +155,9 @@ services:
       - PGID=${ENV_PGID}
       - PUID=${ENV_PUID}
     volumes:
-      #- sonarr
-      #- radarr
-      #- plex
+      - sonarr
+      - radarr
+      - plex
       - /etc/localtime:/etc/localtime:ro
       - ${SERVICES_CONFIG_DIR}/ombi/config:/config
     labels:
