@@ -1,5 +1,5 @@
 
-![DockerPlex](https://raw.githubusercontent.com/BeefBytes/Assets/master/DockerPlex/logos/png/logo_dockerplex_orange_742x120.png)
+![DockerPlex](https://raw.githubusercontent.com/BeefBytes/Assets/master/DockerPlex/png/logo_dockerplex_orange_742x120.png)
 
 # About DockerPlex
 This project was initially meant for personal use only, but I thought it could be useful for others too. Plex setups are becoming more popular and it’s very time consuming when setups get complex. The aim of this project is to make complex setups less time consuming. The setup covers:
