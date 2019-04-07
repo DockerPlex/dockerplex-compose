@@ -27,23 +27,6 @@ services:
       - CLOUDFLARE_EMAIL=${CLOUDFLARE_EMAIL}
       - CLOUDFLARE_API_KEY=${CLOUDFLARE_API_KEY}
 
-  new.dockerplex.org:
-    image: nginx:latest
-    networks:
-      - dockerplex
-      - local
-    volumes:
-      - ${WEB_DIR}/new.dockerplex.org/public:/usr/share/nginx/html
-      - ${CONFIG_DIR}/nginx/new.dockerplex.org/conf.d:/etc/nginx/conf.d
-      - ${CONFIG_DIR}/nginx/new.dockerplex.org/logs:/var/log/nginx
-      - ${CONFIG_DIR}/nginx/new.dockerplex.org/nginx.conf:/etc/nginx/nginx.conf
-    labels:
-      - "traefik.backend=new.${DOMAIN}"
-      - "traefik.docker.network=dockerplex"
-      - "traefik.frontend.rule=Host:new.${DOMAIN}"
-      - "traefik.enable=true"
-      - "traefik.port=80"
-
   plex:
     image: linuxserver/plex:latest
     networks:
