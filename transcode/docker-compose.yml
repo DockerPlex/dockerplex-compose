@@ -1,0 +1,18 @@
+version: '2.2'
+
+services:
+
+  transcoder:
+    image: vilsol/transcoder
+    #restart: always
+    tty: true
+    cpus: 1
+    cpuset: "1,3,5,7"
+    volumes:
+      - ${MEDIA_DIR}:/media
+    environment:
+      - H265_TRANSCODE=false
+      - BOT_KEY=${TRANSCODER_BOT_KEY}
+      - CHAT_ID=${TRANSCODER_CHAT_ID}
+      - HOST=${TRANSCODER_HOST}
+

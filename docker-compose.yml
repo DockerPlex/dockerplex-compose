@@ -1,0 +1,200 @@
+version: '3'
+
+networks:
+  dockerplex:
+    external: true
+  local:
+    external: false
+    
+services:
+
+  traefik:
+    image: traefik:1.7
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - dockerplex
+      - local
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${CONFIG_DIR}/traefik/traefik.toml:/traefik.toml
+      - ${CONFIG_DIR}/traefik/acme.json:/acme.json
+      - ${CONFIG_DIR}/traefik/.htpasswd:/.htpasswd
+      - ${CONFIG_DIR}/traefik/logs:/logs
+    environment:
+      - CLOUDFLARE_EMAIL=${CLOUDFLARE_EMAIL}
+      - CLOUDFLARE_API_KEY=${CLOUDFLARE_API_KEY}
+
+  new.dockerplex.org:
+    image: nginx:latest
+    networks:
+      - dockerplex
+      - local
+    volumes:
+      - ${WEB_DIR}/new.dockerplex.org/public:/usr/share/nginx/html
+      - ${CONFIG_DIR}/nginx/new.dockerplex.org/conf.d:/etc/nginx/conf.d
+      - ${CONFIG_DIR}/nginx/new.dockerplex.org/logs:/var/log/nginx
+      - ${CONFIG_DIR}/nginx/new.dockerplex.org/nginx.conf:/etc/nginx/nginx.conf
+    labels:
+      - "traefik.backend=new.${DOMAIN}"
+      - "traefik.docker.network=dockerplex"
+      - "traefik.frontend.rule=Host:new.${DOMAIN}"
+      - "traefik.enable=true"
+      - "traefik.port=80"
+
+  plex:
+    image: linuxserver/plex:latest
+    networks:
+      - local
+    environment:
+      - VERSION=latest
+      - PGID=1000
+      - PUID=911
+      - TZ=Europe/Berlin
+    ports:
+      - 32400:32400
+      - 32400:32400/udp
+      - 32469:32469
+      - 32469:32469/udp
+      - 5353:5353/udp
+      - 1900:1900/udp
+    volumes:
+      - ${CONFIG_DIR}/plex/config:/config
+      - ${MEDIA_DIR}:/data/plex_media
+      - ${PLEX_TRANSCODE_DIR}/transcode:/transcode
+
+  transmission:
+    image: linuxserver/transmission:latest
+    networks:
+      - dockerplex
+      - local
+    environment:
+      - PGID=${ENV_PGID}
+      - PUID=${ENV_PUID}
+    ports:
+      - 51413:51413
+      - 51413:51413/udp
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${CONFIG_DIR}/transmission/config:/config
+      - ${DOWNLOADS_DIR}:/downloads
+      - ${DOWNLOADS_DIR}/torrents:/watch
+    labels:
+      - "traefik.backend=transmission"
+      - "traefik.docker.network=dockerplex"
+      - "traefik.frontend.rule=Host:transmission.${DOMAIN}"
+      - "traefik.enable=true"
+      - "traefik.backend.port=9091"
+
+  sonarr:
+    image: linuxserver/sonarr:latest
+    networks:
+      - dockerplex
+      - local
+    environment:
+      - PGID=${ENV_PGID}
+      - PUID=${ENV_PUID}
+    volumes:
+      - /dev/rtc:/dev/rtc:ro
+      - ${CONFIG_DIR}/sonarr/config:/config
+      - ${MEDIA_DIR}/server/tvshows:/tv
+      - ${MEDIA_DIR}/server/anime:/anime
+      - ${MEDIA_DIR}/server/cartoons:/cartoons
+      - ${DOWNLOADS_DIR}/complete:/downloads/complete
+    labels:
+      - "traefik.frontend.auth.basic.usersFile=/.htpasswd"
+      - "traefik.backend=sonarr"
+      - "traefik.docker.network=dockerplex"
+      - "traefik.frontend.rule=Host:sonarr.${DOMAIN}"
+      - "traefik.enable=true"
+      - "traefik.backend.port=8989"
+
+  radarr:
+    image: linuxserver/radarr:latest
+    networks:
+      - dockerplex
+      - local
+    environment:
+      - PGID=${ENV_PGID}
+      - PUID=${ENV_PUID}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${CONFIG_DIR}/radarr/config:/config
+      - ${MEDIA_DIR}/server/movies:/movies
+      - ${DOWNLOADS_DIR}/complete:/downloads/complete
+    labels:
+      - "traefik.frontend.auth.basic.usersFile=/.htpasswd"
+      - "traefik.backend=radarr"
+      - "traefik.docker.network=dockerplex"
+      - "traefik.frontend.rule=Host:radarr.${DOMAIN}"
+      - "traefik.enable=true"
+      - "traefik.backend.port=7878"
+
+            
+  jackett:
+    image: linuxserver/jackett:latest
+    networks:
+      - dockerplex
+      - local
+    environment:
+      - PGID=${ENV_PGID}
+      - PUID=${ENV_PUID}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${CONFIG_DIR}/jackett/config:/config
+    labels:
+      - "traefik.frontend.auth.basic.usersFile=/.htpasswd"
+      - "traefik.backend=jackett"
+      - "traefik.docker.network=dockerplex"
+      - "traefik.frontend.rule=Host:jackett.${DOMAIN}"
+      - "traefik.enable=true"
+      - "traefik.backend.port=9117"
+
+  tautulli:
+    image: linuxserver/tautulli:latest
+    networks:
+      - dockerplex
+      - local
+    environment:
+      - PGID=${ENV_PGID}
+      - PUID=${ENV_PUID}
+      - TZ=Europe/Berlin
+    volumes:
+      - ${CONFIG_DIR}/tautulli/config:/config
+      - ${CONFIG_DIR}/tautulli/logs:/logs
+      - ${CONFIG_DIR}/plex/config:/plex/config
+      - /mnt/docker/data/dockerplex/web/new.dockerplex.org/public:/config/newsletters
+    labels:
+      #- "traefik.frontend.auth.basic.usersFile=/.htpasswd"
+      - "traefik.backend=tautulli"
+      - "traefik.docker.network=dockerplex"
+      - "traefik.frontend.rule=Host:tautulli.${DOMAIN}"
+      - "traefik.enable=true"
+      - "traefik.backend.port=8181"
+
+  ombi:
+    image: linuxserver/ombi:latest
+    networks:
+      - dockerplex
+      - local
+    links:
+      - sonarr:sonarr
+      - radarr:radarr
+      - plex:plex
+    enviroment:
+      - PGID=${ENV_PGID}
+      - PUID=${ENV_PUID}
+    volumes:
+      - sonarr
+      - radarr
+      - plex
+      - /etc/localtime:/etc/localtime:ro
+      - ${CONFIG_DIR}/ombi/config:/config
+    labels:
+      - "traefik.backend=ombi"
+      - "traefik.docker.network=dockerplex"
+      - "traefik.frontend.rule=Host:request.${DOMAIN}"
+      - "traefik.enable=true"
+      - "traefik.backend.port=3579"

@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+
+  plexdrive:
+    image: wiserain/plexdrive
+    restart: always
+    network_mode: "bridge"
+    volumes:
+      - ${CONFIG_DIR}/plexdrive/config:/config
+      - ${MEDIA_DIR}/gdrive:/data:shared
+    privileged: true
+    devices:
+      - /dev/fuse
+    cap_add:
+      - MKNOD
+      - SYS_ADMIN
+    environment:
+      - PUID=1000
+      - PGID=1000
+      #- RUN_OPTS=<additional arguments for running plexdrive>
